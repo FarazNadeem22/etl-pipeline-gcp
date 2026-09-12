@@ -18,25 +18,30 @@
 MERGE `clean.daily_prices` AS target
 
 USING (
-    SELECT  symbol, date, close_price, volume
+    SELECT  symbol, date, close_price, volume, CURRENT_TIMESTAMP() AS loaded_at
     FROM  `staging.daily_prices_raw`
     WHERE symbol IN ('AAPL', 'APLD', 'VOO', 'TMUS', 'JEPQ', 'RIVN', 'QQQ', 'SMCI', 'DUOL')
+    AND 
+    date = @execution_date
 ) AS source
 
 ON target.symbol = source.symbol AND target.date = source.date
 
 WHEN MATCHED THEN UPDATE SET 
     close_price = source.close_price,
-    volume   = source.volume
+    volume   = source.volume,
+    loaded_at = source.loaded_at
 
 WHEN NOT MATCHED THEN INSERT (
     symbol, 
     date, 
     close_price, 
-    volume) 
+    volume, 
+    loaded_at) 
 VALUES (
     source.symbol,
     source.date,
     source.close_price,
-    source.volume
+    source.volume,
+    source.loaded_at
 );
